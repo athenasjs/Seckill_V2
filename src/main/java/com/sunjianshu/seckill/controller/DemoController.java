@@ -1,7 +1,10 @@
 package com.sunjianshu.seckill.controller;
 
+import com.sunjianshu.seckill.domain.User;
 import com.sunjianshu.seckill.result.CodeMsg;
 import com.sunjianshu.seckill.result.Result;
+import com.sunjianshu.seckill.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,7 +13,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @RequestMapping("/demo")
 public class DemoController {
-
+    @Autowired
+    private UserService userService;
     //1.rest api Json输出  2.页面
     @RequestMapping("/")
     @ResponseBody
@@ -31,5 +35,17 @@ public class DemoController {
         return Result.error(CodeMsg.SERVER_ERROR);
     }
 
+    @RequestMapping("/db/get")
+    @ResponseBody
+    public Result<User> dbGet(){
+        User user = userService.getById(1);
+        return Result.success(user);
+    }
 
+    @RequestMapping("/tx")
+    @ResponseBody
+    public Result<Boolean> tx(){
+        userService.tx();
+        return Result.success(true);
+    }
 }
