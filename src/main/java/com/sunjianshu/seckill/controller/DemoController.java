@@ -1,6 +1,8 @@
 package com.sunjianshu.seckill.controller;
 
 import com.sunjianshu.seckill.domain.User;
+import com.sunjianshu.seckill.redis.RedisService;
+import com.sunjianshu.seckill.redis.UserKey;
 import com.sunjianshu.seckill.result.CodeMsg;
 import com.sunjianshu.seckill.result.Result;
 import com.sunjianshu.seckill.service.UserService;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class DemoController {
     @Autowired
     private UserService userService;
+    @Autowired
+    private RedisService redisService;
     //1.rest api Json输出  2.页面
     @RequestMapping("/")
     @ResponseBody
@@ -47,5 +51,23 @@ public class DemoController {
     public Result<Boolean> tx(){
         userService.tx();
         return Result.success(true);
+    }
+
+    @RequestMapping("/redis/get")
+    @ResponseBody
+    public Result<User> redisGet(){
+        User user = redisService.get(UserKey.getById,"4", User.class);
+        return Result.success(user);
+    }
+
+    @RequestMapping("/redis/set")
+    @ResponseBody
+    public Result<User> redisSet(){
+        User user = new User();
+        user.setId(4);
+        user.setName("pipio");
+        redisService.set(UserKey.getById,"4", user);//UserKey:id4
+        user = redisService.get(UserKey.getById,"4", User.class);
+        return Result.success(user);
     }
 }
