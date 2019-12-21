@@ -1,6 +1,7 @@
 package com.sunjianshu.seckill.service;
 
 import com.sunjianshu.seckill.dao.UserDao;
+import com.sunjianshu.seckill.domain.SeckillUser;
 import com.sunjianshu.seckill.domain.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     @Autowired
     private UserDao userDao;
+
 
     public User getById(int id){
         return userDao.getById(id);

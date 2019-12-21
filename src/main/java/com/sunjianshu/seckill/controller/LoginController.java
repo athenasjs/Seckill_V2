@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 
 
@@ -30,7 +31,7 @@ public class LoginController {
 
     @RequestMapping("/do_login")
     @ResponseBody
-    public Result<Boolean> doLogin(@Valid LoginVo loginVo){ //引入JSR303参数校验
+    public Result<Boolean> doLogin(@Valid LoginVo loginVo, HttpServletResponse httpServletResponse){ //引入JSR303参数校验
         log.info(loginVo.toString());
         //参数校验
        /* String passInput = loginVo.getPassword();
@@ -46,7 +47,7 @@ public class LoginController {
         }*/
         //登录 todo
 
-        seckillUserService.login(loginVo);
+        seckillUserService.login(loginVo, httpServletResponse);
        /* if(codeMsg.getCode() == 0){
             return Result.success(true);
         }*/
