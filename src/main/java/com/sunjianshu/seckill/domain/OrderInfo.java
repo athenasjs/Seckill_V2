@@ -7,7 +7,7 @@ public class OrderInfo {
     private Long userId;
     private Long goodsId;
     private Long deliveryAddrId;
-    private Long goodsName;
+    private String goodsName;
     private Integer goodsCount;
     private Double goodsPrice;
     private Integer orderChannel;
@@ -47,11 +47,11 @@ public class OrderInfo {
         this.deliveryAddrId = deliveryAddrId;
     }
 
-    public Long getGoodsName() {
+    public String getGoodsName() {
         return goodsName;
     }
 
-    public void setGoodsName(Long goodsName) {
+    public void setGoodsName(String goodsName) {
         this.goodsName = goodsName;
     }
 

@@ -55,9 +55,6 @@ public class GoodsController {
         model.addAttribute("user", seckillUser);
         GoodsVo goodsVo = goodsService.getGoodsVoByGoodsId(goodsId);
         model.addAttribute("goods", goodsVo);
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        System.out.println(format.format(goodsVo.getStartDate()));
-        System.out.println("goods.start - now" + (goodsVo.getStartDate().getTime() - System.currentTimeMillis()));
         //秒杀时间判断
         long start = goodsVo.getStartDate().getTime();
         long end = goodsVo.getEndDate().getTime();
@@ -75,15 +72,9 @@ public class GoodsController {
             remainSeconds = 0;
         }
         //将两个状态传到页面 显示对应的文案
-        System.out.println("=============" + remainSeconds +"==========");
-        System.out.println("start:" + start);
-        System.out.println("now:" + now);
         model.addAttribute("miaoshaStatus", miaoshaStatus);
         model.addAttribute("remainSeconds", remainSeconds);
         return "goods_detail";
-
-
-
     }
 
 }
