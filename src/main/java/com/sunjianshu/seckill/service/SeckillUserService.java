@@ -30,7 +30,7 @@ public class SeckillUserService {
     }
 
     //登录方法  业务方法返回CodeMsg不合适，所以用业务异常来优化，直接抛出业务异常
-    public boolean/*CodeMsg*/ login(LoginVo loginVo, HttpServletResponse httpServletResponse) {
+    public String/*CodeMsg*/ login(LoginVo loginVo, HttpServletResponse httpServletResponse) {
         if(loginVo == null){
 //            return CodeMsg.SERVER_ERROR;
             throw new GlobalException(CodeMsg.SERVER_ERROR);
@@ -56,8 +56,8 @@ public class SeckillUserService {
         //生成cookie
         String token = UUIDUtil.uuid();
         addCookie(httpServletResponse, seckillUser, token);
-        return true;  //返回真正具有业务含义的内容而不是CodeMsg
-
+        //return true;  //返回真正具有业务含义的内容而不是CodeMsg
+        return token;
     }
 
     //根据token获取用户信息

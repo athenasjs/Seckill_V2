@@ -44,6 +44,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
             <scope>provided</scope>
+            <!--provided依赖 编译时依赖，运行时不需要的-->
         </dependency>
         <dependency>
             <groupId>mysql</groupId>

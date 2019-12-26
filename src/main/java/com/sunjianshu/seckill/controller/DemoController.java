@@ -1,5 +1,6 @@
 package com.sunjianshu.seckill.controller;
 
+import com.sunjianshu.seckill.domain.SeckillUser;
 import com.sunjianshu.seckill.domain.User;
 import com.sunjianshu.seckill.redis.RedisService;
 import com.sunjianshu.seckill.redis.UserKey;
@@ -69,5 +70,11 @@ public class DemoController {
         redisService.set(UserKey.getById,"4", user);//UserKey:id4
         user = redisService.get(UserKey.getById,"4", User.class);
         return Result.success(user);
+    }
+
+    @RequestMapping("/info")  //测试QPS的接口，只有查询redis获取对象的操作
+    @ResponseBody
+    public Result<SeckillUser> info(Model model, SeckillUser seckillUser){
+        return Result.success(seckillUser);
     }
 }

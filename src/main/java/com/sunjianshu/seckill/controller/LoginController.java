@@ -31,7 +31,7 @@ public class LoginController {
 
     @RequestMapping("/do_login")
     @ResponseBody
-    public Result<Boolean> doLogin(@Valid LoginVo loginVo, HttpServletResponse httpServletResponse){ //引入JSR303参数校验
+    public Result<String> doLogin(@Valid LoginVo loginVo, HttpServletResponse httpServletResponse){ //引入JSR303参数校验
         log.info(loginVo.toString());
         //参数校验
        /* String passInput = loginVo.getPassword();
@@ -47,11 +47,11 @@ public class LoginController {
         }*/
         //登录 todo
 
-        seckillUserService.login(loginVo, httpServletResponse);
+        String token = seckillUserService.login(loginVo, httpServletResponse);
        /* if(codeMsg.getCode() == 0){
             return Result.success(true);
         }*/
-        return Result.success(true);
+        return Result.success(token);
     }
 
 

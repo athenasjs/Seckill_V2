@@ -43,7 +43,7 @@ public class SeckillController {
         }
         //判断库存 如果没有库存则返回秒杀错误页面
         GoodsVo goodsVo = goodsService.getGoodsVoByGoodsId(goodsId);
-        int stock = goodsVo.getGoodsStock();
+        int stock = goodsVo.getStockCount();
         if(stock <= 0){
             model.addAttribute("errmsg", CodeMsg.MIAO_SHA_OVER);
             return "miaosha_fail";
