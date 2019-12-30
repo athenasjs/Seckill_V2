@@ -25,8 +25,38 @@ public class SeckillUserService {
     @Autowired
     RedisService redisService;
 
+    //改造根据ID获取用户对象的方法，对象缓存
+    //用户对象缓存时间设为永久有效（在没有变更的情况下）
     public SeckillUser getById(long id){
-        return seckillUserDao.getById(id);
+        //取缓存
+        SeckillUser user = redisService.get(SeckillUserKey.getById, "" + id, SeckillUser.class);
+        if(user != null){
+            return user;
+        }
+        //取数据库
+        user = seckillUserDao.getById(id);
+        if(user != null){
+            redisService.set(SeckillUserKey.getById, "" + id, user);
+        }
+        return user;
+    }
+
+    //修改密码
+    public boolean updatePassword(long id, String passwordNew, String token){
+        //取user
+        SeckillUser user = getById(id);
+        if(user == null){
+            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
+        }
+        SeckillUser toBeUpdate = new SeckillUser();
+        toBeUpdate.setId(id);
+        toBeUpdate.setPassword(MD5Util.formPassToDBPass(passwordNew, user.getSalt()));
+        seckillUserDao.update(toBeUpdate);
+        //处理缓存  否则出现缓存不一致
+        redisService.delete(SeckillUserKey.getById, "" + id);
+        user.setPassword(toBeUpdate.getPassword());
+        redisService.set(SeckillUserKey.token, token, user);//token作为key的缓存需要更新，直接删除会无法登陆
+        return true;
     }
 
     //登录方法  业务方法返回CodeMsg不合适，所以用业务异常来优化，直接抛出业务异常
@@ -60,7 +90,7 @@ public class SeckillUserService {
         return token;
     }
 
-    //根据token获取用户信息
+    //根据token获取用户信息   这种方式就是对象级缓存
     //public方法首先第一步要做参数校验
     public SeckillUser getByToken(HttpServletResponse response, String token) {
         if(null == token){
@@ -72,7 +102,6 @@ public class SeckillUserService {
             addCookie(response, user, token);
         }
         return user;
-
     }
 
 

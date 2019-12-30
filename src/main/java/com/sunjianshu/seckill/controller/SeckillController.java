@@ -37,10 +37,10 @@ public class SeckillController {
     @RequestMapping("/do_miaosha")
     public String list(Model model, SeckillUser seckillUser,
                        @RequestParam("goodsId")Long goodsId){
-        model.addAttribute(seckillUser);
         if(seckillUser == null){
             return "login";  //用户还没有登录
         }
+        model.addAttribute(seckillUser);
         //判断库存 如果没有库存则返回秒杀错误页面
         GoodsVo goodsVo = goodsService.getGoodsVoByGoodsId(goodsId);
         int stock = goodsVo.getStockCount();
