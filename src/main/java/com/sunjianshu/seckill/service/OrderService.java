@@ -40,4 +40,9 @@ public class OrderService {
         orderDao.insertMiaoshaOrder(seckillOrder);
         return orderInfo;
     }
+
+    public OrderInfo getOrderById(long orderId) {
+        return orderDao.getOrderById(orderId);
+
+    }
 }

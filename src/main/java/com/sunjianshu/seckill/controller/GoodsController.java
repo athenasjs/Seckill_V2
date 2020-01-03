@@ -4,9 +4,11 @@ import com.sunjianshu.seckill.domain.SeckillUser;
 import com.sunjianshu.seckill.redis.GoodsKey;
 import com.sunjianshu.seckill.redis.KeyPrefix;
 import com.sunjianshu.seckill.redis.RedisService;
+import com.sunjianshu.seckill.result.Result;
 import com.sunjianshu.seckill.service.GoodsService;
 import com.sunjianshu.seckill.service.SeckillUserService;
 import com.sunjianshu.seckill.service.UserService;
+import com.sunjianshu.seckill.vo.GoodsDetailVo;
 import com.sunjianshu.seckill.vo.GoodsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -36,7 +38,7 @@ public class GoodsController {
 
     @RequestMapping(value="/to_list", produces = "text/html")  //@CookieValue取出cookie
     @ResponseBody  //加入页面缓存，直接返回html源代码
-    public String toLogin(HttpServletResponse response, Model model,
+    public String toList(HttpServletResponse response, Model model,
                           /*@CookieValue(value= SeckillUserService.COOKIE_NAME_TOKEN, required =false) String cookieToken,
                           @RequestParam(value= SeckillUserService.COOKIE_NAME_TOKEN, required = false) String paramToken,*/
                           SeckillUser seckillUser,
@@ -69,7 +71,7 @@ public class GoodsController {
         return html;  //手动渲染的页面写到输出中
     }
 
-    //商品详情页  也进行页面缓存
+    /*//商品详情页  也进行页面缓存
     @RequestMapping(value = "/to_detail/{goodsId}", produces = "text/html")
     @ResponseBody
     public String detail(Model model, SeckillUser seckillUser,
@@ -112,6 +114,38 @@ public class GoodsController {
         }
 
         return html;
+    }
+*/
+    //页面静态化处理
+    @RequestMapping(value = "/detail/{goodsId}")
+    @ResponseBody
+    public Result<GoodsDetailVo> detail(Model model, SeckillUser seckillUser,
+                                         @PathVariable("goodsId") long goodsId,
+                                         HttpServletResponse response,
+                                         HttpServletRequest request){
+        GoodsVo goodsVo = goodsService.getGoodsVoByGoodsId(goodsId);
+        //秒杀时间判断
+        long start = goodsVo.getStartDate().getTime();
+        long end = goodsVo.getEndDate().getTime();
+        long now = System.currentTimeMillis();
+        int remainSeconds = 0;
+        int miaoshaStatus = 0;  //秒杀状态，传到页面显示
+        if(now < start){  //秒杀还没开始，倒计时
+            miaoshaStatus = 0;
+            remainSeconds = (int)((start - now)/1000);
+        }else if(now > end){ //秒杀已经结束
+            miaoshaStatus = 2;
+            remainSeconds = -1;
+        }else{ //正在进行中
+            miaoshaStatus = 1;
+            remainSeconds = 0;
+        }
+        GoodsDetailVo vo = new GoodsDetailVo(); //填充vo对象用于静态页面渲染 全部改造成这种形式
+        vo.setGoods(goodsVo);
+        vo.setMiaoshaStatus(miaoshaStatus);
+        vo.setRemainSeconds(remainSeconds);
+        vo.setUser(seckillUser);
+        return Result.success(vo);
     }
 
     //页面缓存方法抽象出来，步骤：1.redis中获取 2.没有则手动渲染并存redis
