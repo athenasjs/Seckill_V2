@@ -1,5 +1,6 @@
 package com.sunjianshu.seckill.controller;
 
+import com.sunjianshu.seckill.config.NeedLogin;
 import com.sunjianshu.seckill.domain.OrderInfo;
 import com.sunjianshu.seckill.domain.SeckillOrder;
 import com.sunjianshu.seckill.domain.SeckillUser;
@@ -46,25 +47,25 @@ public class SeckillController {
         if(seckillUser == null){
             return Result.error(CodeMsg.SESSION_ERROR);  //用户还没有登录
         }
-        model.addAttribute(seckillUser);
         //判断库存 如果没有库存则返回秒杀错误页面
         GoodsVo goodsVo = goodsService.getGoodsVoByGoodsId(goodsId);
         int stock = goodsVo.getStockCount();
         if(stock <= 0){
-            model.addAttribute("errmsg", CodeMsg.MIAO_SHA_OVER);
             return Result.error(CodeMsg.MIAO_SHA_OVER);  //秒杀结束
         }
         //判断是否已经秒杀到了
         SeckillOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(seckillUser.getId(), goodsId);
         if(order != null){
-            model.addAttribute("errmsg", CodeMsg.REPEAT_MIAOSHA);
             return Result.error(CodeMsg.REPEAT_MIAOSHA); //重复秒杀
         }
         //减库存 下订单 写入秒杀订单
         //这几个操作要放到一个事务里面 一步失败需要全部回滚 原子操作
         //返回秒杀信息是因为秒杀成功后直接进入订单详情页
         OrderInfo orderInfo = seckillService.miaosha(seckillUser, goodsVo);
-        return Result.success(orderInfo); //返回订单
+        if(null != orderInfo){
+            return Result.success(orderInfo); //返回订单
+        }
+        return Result.error(CodeMsg.MIAO_SHA_OVER);
 
     }
 

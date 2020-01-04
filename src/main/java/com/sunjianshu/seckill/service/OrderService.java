@@ -4,6 +4,8 @@ import com.sunjianshu.seckill.dao.OrderDao;
 import com.sunjianshu.seckill.domain.OrderInfo;
 import com.sunjianshu.seckill.domain.SeckillOrder;
 import com.sunjianshu.seckill.domain.SeckillUser;
+import com.sunjianshu.seckill.redis.OrderKey;
+import com.sunjianshu.seckill.redis.RedisService;
 import com.sunjianshu.seckill.vo.GoodsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,9 +17,14 @@ import java.util.Date;
 public class OrderService {
     @Autowired
     private OrderDao orderDao;
+    @Autowired
+    private RedisService redisService;
 
+    //这里秒杀订单信息加入缓存处理，小的优化
+    //不设置过期时间，不查数据库了
     public SeckillOrder getMiaoshaOrderByUserIdGoodsId(long id, long goodsId) {
-        return orderDao.getMiaoshaOrderByUserIdGoodsId(id, goodsId);
+        return redisService.get(OrderKey.getMiaoShaOrderByUidGid, ""+id + "_" + goodsId, SeckillOrder.class);
+        //return orderDao.getMiaoshaOrderByUserIdGoodsId(id, goodsId);
     }
 
     @Transactional  //这里也做成一个事务
@@ -37,6 +44,8 @@ public class OrderService {
         seckillOrder.setGoodsId(goodsVo.getId());
         seckillOrder.setOrderId(orderInfo.getId());
         seckillOrder.setUserId(seckillUser.getId());
+        //生成订单完成之后要写入redis
+        redisService.set(OrderKey.getMiaoShaOrderByUidGid, ""+seckillUser.getId() +"_" + goodsVo.getId(), seckillOrder);
         orderDao.insertMiaoshaOrder(seckillOrder);
         return orderInfo;
     }

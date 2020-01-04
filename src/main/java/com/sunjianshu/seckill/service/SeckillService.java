@@ -16,10 +16,13 @@ public class SeckillService {
     private OrderService orderService;
     @Transactional  //原子操作 事务管理
     public OrderInfo miaosha(SeckillUser seckillUser, GoodsVo goodsVo) {
+        OrderInfo orderInfo = null;
         //减库存
-        goodsService.reduceStock(goodsVo);
+        int res = goodsService.reduceStock(goodsVo);
         //写入订单表和秒杀订单表  也是一个事务
-        OrderInfo orderInfo = orderService.createOrder(seckillUser, goodsVo);
+        if(res > 0){
+           orderInfo = orderService.createOrder(seckillUser, goodsVo);
+        }
         return orderInfo;
     }
 }

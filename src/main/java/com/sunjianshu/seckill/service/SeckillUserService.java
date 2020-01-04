@@ -25,7 +25,7 @@ public class SeckillUserService {
     @Autowired
     RedisService redisService;
 
-    //改造根据ID获取用户对象的方法，对象缓存
+    //改造根据ID获取用户对象的方法，对象缓存 (登录时调用)
     //用户对象缓存时间设为永久有效（在没有变更的情况下）
     public SeckillUser getById(long id){
         //取缓存

@@ -1,5 +1,7 @@
 package com.sunjianshu.seckill.controller;
 
+import com.sunjianshu.seckill.config.NeedLogin;
+import com.sunjianshu.seckill.domain.OrderInfo;
 import com.sunjianshu.seckill.domain.SeckillUser;
 import com.sunjianshu.seckill.domain.User;
 import com.sunjianshu.seckill.redis.RedisService;
@@ -76,5 +78,15 @@ public class DemoController {
     @ResponseBody
     public Result<SeckillUser> info(Model model, SeckillUser seckillUser){
         return Result.success(seckillUser);
+    }
+
+
+    @RequestMapping("/test1")
+    @ResponseBody
+    @NeedLogin
+    public Result<OrderInfo> test1(){
+        OrderInfo info = new OrderInfo();
+        info.setUserId(2L);
+        return Result.success(info);
     }
 }
