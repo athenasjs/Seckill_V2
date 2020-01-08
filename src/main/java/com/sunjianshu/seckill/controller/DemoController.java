@@ -4,6 +4,7 @@ import com.sunjianshu.seckill.config.NeedLogin;
 import com.sunjianshu.seckill.domain.OrderInfo;
 import com.sunjianshu.seckill.domain.SeckillUser;
 import com.sunjianshu.seckill.domain.User;
+import com.sunjianshu.seckill.rabbitmq.MQSender;
 import com.sunjianshu.seckill.redis.RedisService;
 import com.sunjianshu.seckill.redis.UserKey;
 import com.sunjianshu.seckill.result.CodeMsg;
@@ -22,6 +23,8 @@ public class DemoController {
     private UserService userService;
     @Autowired
     private RedisService redisService;
+    @Autowired
+    private MQSender sender;
     //1.rest api Json输出  2.页面
     @RequestMapping("/")
     @ResponseBody
@@ -89,4 +92,12 @@ public class DemoController {
         info.setUserId(2L);
         return Result.success(info);
     }
+
+   /* @RequestMapping("/mq")
+    @ResponseBody
+    public Result<String> mq(){
+        String msg = "hello, imooc";
+        sender.send(msg);
+        return Result.success(msg);
+    }*/
 }

@@ -40,6 +40,7 @@ public class OrderService {
         orderInfo.setStatus(0);//支付状态
         orderInfo.setUserId(seckillUser.getId());
         orderDao.insert(orderInfo);  //插入订单表，返回主键,返回到orderInfo对象中的id属性
+        //插入之后，Mybatis会把生成的id塞到对象里面
         SeckillOrder seckillOrder = new SeckillOrder();
         seckillOrder.setGoodsId(goodsVo.getId());
         seckillOrder.setOrderId(orderInfo.getId());
@@ -53,5 +54,10 @@ public class OrderService {
     public OrderInfo getOrderById(long orderId) {
         return orderDao.getOrderById(orderId);
 
+    }
+
+    public void deleteOrders() {
+        orderDao.deleteOrders();
+        orderDao.deleteSeckillOrders();
     }
 }

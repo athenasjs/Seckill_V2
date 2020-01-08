@@ -5,6 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class RedisService {
@@ -66,7 +71,7 @@ public class RedisService {
     /*
     bean对象转化为字符串
      */
-    private <T> String beanToString(T value) {
+    public static <T> String beanToString(T value) {
         if(value == null){
             return null;
         }
@@ -77,7 +82,9 @@ public class RedisService {
             return (String)value;
         }else if(clazz == long.class || clazz == Long.class){
             return "" + value;
-        }else{
+        }else if(clazz == Boolean.class || clazz == boolean.class)
+            return "" + value;
+        else {
             return JSON.toJSONString(value);  //其他类型，bean转化为一个json
         }
     }
@@ -86,7 +93,7 @@ public class RedisService {
     字符串转化为Bean对象,用fastjson把对象转化成json字符串写到redis中
      */
     @SuppressWarnings("unchecked")
-    private <T> T stringToBean(String str, Class<T> clazz) {
+    public static  <T> T stringToBean(String str, Class<T> clazz) {
         //参数校验必不可少
         if(str == null || str.length() <=0 || clazz == null){
             return null;
@@ -97,7 +104,9 @@ public class RedisService {
             return (T)str;
         }else if(clazz == long.class || clazz == Long.class){
             return (T)Long.valueOf(str);
-        }else{
+        }else if(clazz == Boolean.class || clazz == boolean.class){
+            return (T)Boolean.valueOf(str);
+        }else {
             return JSON.toJavaObject(JSON.parseObject(str), clazz);
         }
     }
@@ -171,6 +180,52 @@ public class RedisService {
         }
     }
 
+    public boolean delete(KeyPrefix prefix){
+        if(null == prefix){
+            return false;
+        }
+        List<String> keys = scanKeys(prefix.getPrefix());
+        if(null == keys || keys.size() <= 0){
+            return true;
+        }
+        Jedis jedis = null;
+        try{
+            jedis = jedisPool.getResource();
+            jedis.del(keys.toArray(new String[0]));  //删除一个字符串key数组
+            return true;
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
+        }finally{
+            returnToPool(jedis);
+        }
+
+    }
+
+    public List<String> scanKeys(String key){
+        Jedis jedis = null;
+        try{
+            jedis = jedisPool.getResource();
+            List<String> keys = new ArrayList<>();
+            String cursor = "0";
+            ScanParams sp = new ScanParams();
+            sp.match("*" + key + "*");
+            sp.count(100);
+            do{
+                ScanResult<String> ret = jedis.scan(cursor, sp);
+                List<String> result = ret.getResult();
+                if(result != null && result.size() > 0){
+                    keys.addAll(result);
+                }
+                //再处理cursor
+            }while(!cursor.equals("0"));
+            return keys;
+        }finally {
+            if(null != jedis){
+                returnToPool(jedis);
+            }
+        }
+    }
     private void returnToPool(Jedis jedis) {
         if(jedis != null){
             jedis.close(); //返回到连接池

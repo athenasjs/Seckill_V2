@@ -63,6 +63,42 @@
 </div>
 </body>
 <script>
+    function getMiaoshaResult(goodsId){   //客户端轮询秒杀结果
+        g_showLoading();  //加载中
+        $.ajax({
+            url:"/miaosha/result",
+            type:"GET",
+            data:{
+                goodsId:$("#goodsId").val(),
+            },
+            success:function(data){
+                if(data.code == 0){
+                    var result = data.data;
+                    if(result < 0){
+                        layer.msg("对不起，秒杀失败");
+                    }else if(result == 0){//继续轮询
+                        setTimeout(function(){   //50ms之后再调用查询接口
+                            getMiaoshaResult(goodsId);
+                        }, 50);
+                    }else{
+                        layer.confirm("恭喜你，秒杀成功！查看订单？", {btn:["确定","取消"]},
+                            function(){
+                            //跳转订单详情
+                                window.location.href="/order_detail.htm?orderId="+result;
+                            },
+                            function(){
+                                layer.closeAll();
+                            });
+                    }
+                }else{
+                    layer.msg(data.msg);
+                }
+            },
+            error:function(){
+                layer.msg("客户端请求有误");
+            }
+        });
+    }
     function doMiaosha(){   //发起秒杀请求 传入商品ID
         $.ajax({
             url:"miaosha/do_miaosha",
@@ -72,7 +108,9 @@
             },
             success:function (data) {
                 if(data.code==0){
-                    window.location.href="/order_detail.htm?orderId=" + data.data.id;  //传入orderId，在这个页面再重新访问接口把订单加载出来
+                    //这里异步下单改造后，不是直接访问订单详情而是客户端轮询秒杀结果
+                    //window.location.href="/order_detail.htm?orderId=" + data.data.id;  //传入orderId，在这个页面再重新访问接口把订单加载出来
+                    getMiaoshaResult($("#goodsId").val());
                 }else{
                     layer.msg(data.msg);
                 }
@@ -80,7 +118,6 @@
             error:function () {
                 layer.msg("客户端请求有误");
             }
-
 
         });
     }
