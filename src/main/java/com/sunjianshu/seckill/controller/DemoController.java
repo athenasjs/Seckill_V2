@@ -1,7 +1,5 @@
 package com.sunjianshu.seckill.controller;
 
-import com.sunjianshu.seckill.config.NeedLogin;
-import com.sunjianshu.seckill.domain.OrderInfo;
 import com.sunjianshu.seckill.domain.SeckillUser;
 import com.sunjianshu.seckill.domain.User;
 import com.sunjianshu.seckill.rabbitmq.MQSender;
@@ -84,14 +82,7 @@ public class DemoController {
     }
 
 
-    @RequestMapping("/test1")
-    @ResponseBody
-    @NeedLogin
-    public Result<OrderInfo> test1(){
-        OrderInfo info = new OrderInfo();
-        info.setUserId(2L);
-        return Result.success(info);
-    }
+
 
    /* @RequestMapping("/mq")
     @ResponseBody

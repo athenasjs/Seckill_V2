@@ -1,15 +1,11 @@
 package com.sunjianshu.seckill.controller;
 
-import com.sunjianshu.seckill.config.NeedLogin;
-import com.sunjianshu.seckill.domain.OrderInfo;
+import com.sunjianshu.seckill.access.AccessLimit;
 import com.sunjianshu.seckill.domain.SeckillOrder;
 import com.sunjianshu.seckill.domain.SeckillUser;
 import com.sunjianshu.seckill.rabbitmq.MQSender;
 import com.sunjianshu.seckill.rabbitmq.SeckillMessage;
-import com.sunjianshu.seckill.redis.GoodsKey;
-import com.sunjianshu.seckill.redis.OrderKey;
-import com.sunjianshu.seckill.redis.RedisService;
-import com.sunjianshu.seckill.redis.SeckillKey;
+import com.sunjianshu.seckill.redis.*;
 import com.sunjianshu.seckill.result.CodeMsg;
 import com.sunjianshu.seckill.result.Result;
 import com.sunjianshu.seckill.service.GoodsService;
@@ -17,15 +13,18 @@ import com.sunjianshu.seckill.service.OrderService;
 import com.sunjianshu.seckill.service.SeckillService;
 import com.sunjianshu.seckill.service.SeckillUserService;
 import com.sunjianshu.seckill.vo.GoodsVo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 
@@ -50,15 +49,22 @@ public class SeckillController  implements InitializingBean {
     private MQSender mqSender;
     //内存标记，redis中商品库存状态
     private volatile HashMap<Long, Boolean> localOverMap = new HashMap<>();
+    private static Logger logger = LoggerFactory.getLogger(SeckillController.class);
     //限定只能用POST提交
     //GET POST区别  GET是幂等的，无论调用多少次产生结果是一样的，对服务端数据没有影响
     //而POST请求对服务端数据产生影响  不是幂等的
-    @RequestMapping(value="/do_miaosha", method = RequestMethod.POST)   //页面静态化处理后直接返回订单信息
+    @RequestMapping(value="/{path}/do_miaosha", method = RequestMethod.POST)   //页面静态化处理后直接返回订单信息
     @ResponseBody
-    public Result<Integer> seckill(Model model, SeckillUser seckillUser,
-                       @RequestParam("goodsId")Long goodsId){
+    public Result<Integer> seckill(SeckillUser seckillUser,
+                                   @RequestParam("goodsId")Long goodsId,
+                                   @PathVariable("path") String path){
         if(seckillUser == null){
             return Result.error(CodeMsg.SESSION_ERROR);  //用户还没有登录
+        }
+        //验证秒杀URL path
+        boolean check = seckillService.checkPath(seckillUser, goodsId, path);
+        if(!check){  //URL不匹配，请求非法
+            return Result.error(CodeMsg.REQUEST_ILLEGAL);
         }
         //异步下单改造
         //内存标记 减少redis访问
@@ -66,6 +72,14 @@ public class SeckillController  implements InitializingBean {
         if(over){
             return Result.error(CodeMsg.MIAO_SHA_OVER);
         }
+        //判断是否已经秒杀到了  这里优化为查缓存，基本没有什么性能问题
+        //这里放到了redis减库存步骤的前面，避免由于重复秒杀的问题导致有效请求不足库存量
+        SeckillOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(seckillUser.getId(), goodsId);
+        if(order != null){
+            logger.info("检测到重复秒杀................" );
+            return Result.error(CodeMsg.REPEAT_MIAOSHA); //重复秒杀
+        }
+
         //预减库存
         long stock = redisService.decr(GoodsKey.getMiaoShaGoodsStock, goodsId+"");
         if(stock < 0){
@@ -73,11 +87,6 @@ public class SeckillController  implements InitializingBean {
             return Result.error(CodeMsg.MIAO_SHA_OVER);
         }
 
-        //判断是否已经秒杀到了  这里优化为查缓存，基本没有什么性能问题
-        SeckillOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(seckillUser.getId(), goodsId);
-        if(order != null){
-            return Result.error(CodeMsg.REPEAT_MIAOSHA); //重复秒杀
-        }
 
         //请求入队
         //秒杀信息包含用户信息和商品
@@ -155,6 +164,59 @@ public class SeckillController  implements InitializingBean {
         redisService.delete(SeckillKey.isGoodsOver);
         seckillService.reset(goodsList);
         return Result.success(true);
+    }
+    //获取秒杀URL的接口
+    @RequestMapping(value = "/path", method=RequestMethod.GET)
+    @ResponseBody
+    @AccessLimit(seconds=5, maxCount=5, needLogin=true)
+    public Result<String> getMiaoShaPath(SeckillUser user, @RequestParam("goodsId") long goodsId,
+                                         @RequestParam(value="verifyCode", defaultValue = "0") int verifyCode,
+                                         HttpServletRequest request){
+        if(null == user){
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        //加入限流措施  查询访问的次数
+/*        String uri = request.getRequestURI();
+        String key = uri + "_" + user.getId();
+        Integer count = redisService.get(AccessKey.access, key, Integer.class);
+        if(count == null){
+            redisService.set(AccessKey.access, key, 1);
+        }else if(count < 5){
+            redisService.incr(AccessKey.access , key);
+        }else{
+            return Result.error(CodeMsg.ACCESS_LIMIT_REACHED);//如果超过限流次数，则返回错误
+        }*/
+
+        //这里加入验证码校验逻辑
+        boolean check = seckillService.checkVerifyCode(user, goodsId, verifyCode);
+        if(!check){
+            return Result.error(CodeMsg.REQUEST_ILLEGAL);
+        }
+        //生成path逻辑封装
+        String path = seckillService.createMiaoShaPath(user, goodsId);
+        return Result.success(path);
+    }
+
+    //获取秒杀URL之前 获取图形验证码的接口
+    @RequestMapping(value="/verifyCode", method=RequestMethod.GET)
+    @ResponseBody
+    public Result<String> getMiaoShaVerifyCode(HttpServletResponse response, SeckillUser user,
+                                               @RequestParam("goodsId") long goodsId){
+        if(user == null){
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        BufferedImage image = seckillService.createVerifyCode(user, goodsId);
+        //写入响应
+        try{
+            OutputStream os = response.getOutputStream();
+            ImageIO.write(image, "JPEG", os);
+            os.flush();
+            os.close();
+            return null;  //数据通过OutputStream已经写回了，不需要再返回
+        }catch(Exception e){
+            return Result.error(CodeMsg.MIAOSHA_FAIL);
+        }
+
     }
 
 

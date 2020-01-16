@@ -1,5 +1,6 @@
 package com.sunjianshu.seckill.config;
 
+import com.sunjianshu.seckill.access.AccessInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -13,7 +14,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     @Autowired
     UserArgumentResolver userArgumentResolver;
     @Autowired
-    LoginInterceptor loginInterceptor;
+    AccessInterceptor accessInterceptor;
 
     @Override  //加入自定义的参数解析器
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
@@ -22,8 +23,9 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 
     @Override    //加入自定义的拦截器（判断用户登录）
     public void addInterceptors(InterceptorRegistry registry) {
-        String[] excludes = new String[]{"/", "/login/to_login", "/templates/**", "/static/**"};
+       /* String[] excludes = new String[]{"/", "/login/to_login", "/templates/**", "/static/**"};
         registry.addInterceptor(loginInterceptor).addPathPatterns("/**")
-        .excludePathPatterns(excludes);
+        .excludePathPatterns(excludes);*/
+        registry.addInterceptor(accessInterceptor);
     }
 }

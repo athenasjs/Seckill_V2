@@ -45,6 +45,7 @@ public class MQReceiver {
         //判断是否重复秒杀  数据库也有唯一索引约束  这里查一下redis，没什么性能损耗
         SeckillOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(seckillUser.getId(), goodsId);
         if(order != null){
+            logger.info("检测到重复秒杀............");
             return;
         }
         //执行秒杀
